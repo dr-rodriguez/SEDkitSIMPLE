@@ -19,7 +19,7 @@ This will need to be passed to `SEDSIMPLE` for it to work.
 
 The key functionality in this package is a new class (`SEDSIMPLE`) that inherits from `SED` in order 
 to provide wrappers around SIMPLE Database calls. 
-For convenience, you may want to have utils.py in your current working directory. 
+For convenience, you may want to have sedsimple.py in your current working directory. 
 Initiating with `SEDSIMPLE` is as simple as:
 
 ```python
