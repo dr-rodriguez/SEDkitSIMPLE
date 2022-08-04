@@ -22,7 +22,7 @@ class SEDSIMPLE(SED):
         if len(Sources) == 1:
             db_name = Sources['source'][0]
             if db_name != name:
-                self.message(f'{name} matched to {db_name} in the database')
+                self.message(f'{name} matched to {db_name} in the database', pre='[SIMPLE]')
                 name = db_name
 
         # Database inventory
@@ -44,9 +44,9 @@ class SEDSIMPLE(SED):
                 s = SkyCoord(ra=data['ra']*u.degree, dec=data['dec']*u.degree)
                 self.sky_coords = s
             else:
-                self.message(f"More than one source in database: \n{self.inventory[table]}")
+                self.message(f"More than one source in database: \n{self.inventory[table]}", pre='[SIMPLE]')
         else:
-            self.message(f"Source {self.name} not in database.")
+            self.message(f"Source {self.name} not in database.", pre='[SIMPLE]')
 
     def load_parallax_db(self):
         # Fetch parralax from database
@@ -59,12 +59,12 @@ class SEDSIMPLE(SED):
                     error = Quantity(row['parallax_error'], unit=u.mas)
 
                     # Fetch reference used in database
-                    bibcode = self.fetch_db_bibcode(row['reference'])
+                    bibcode = self._fetch_db_bibcode(row['reference'])
 
                     # Store value
                     self.parallax = value, error, bibcode
         else:
-            self.message(f"No parallax for {self.name} in database.")
+            self.message(f"No parallax for {self.name} in database.", pre='[SIMPLE]')
 
     def load_photometry_db(self):
         # Fetch photometry from database
@@ -72,11 +72,11 @@ class SEDSIMPLE(SED):
         if table in self.inventory:
             # Fetch the adopted parallax
             for row in self.inventory[table]:
-                bibcode = self.fetch_db_bibcode(row['reference'])
+                bibcode = self._fetch_db_bibcode(row['reference'])
                 band = self._fix_bands(row['band'])
                 self.add_photometry(band, row['magnitude'], mag_unc=row['magnitude_error'], ref=bibcode)
         else:
-            self.message(f"No photometry for {self.name} in database.")
+            self.message(f"No photometry for {self.name} in database.", pre='[SIMPLE]')
 
     def load_spectral_type_db(self):
         # Fetch spectral type from database
@@ -85,10 +85,10 @@ class SEDSIMPLE(SED):
             # Fetch the adopted spectral type
             for row in self.inventory[table]:
                 if row['adopted']:
-                    bibcode = self.fetch_db_bibcode(row['reference'])
+                    bibcode = self._fetch_db_bibcode(row['reference'])
                     self.spectral_type = row['spectral_type_string'], bibcode
         else:
-            self.message(f"No spectral type for {self.name} in database.")
+            self.message(f"No spectral type for {self.name} in database.", pre='[SIMPLE]')
 
     def load_spectra_db(self):
         pass
@@ -104,7 +104,7 @@ class SEDSIMPLE(SED):
             band = band.replace(key, value)
         return band
 
-    def fetch_db_bibcode(self, ref):
+    def _fetch_db_bibcode(self, ref):
         # Utility function to fetch a reference from the database
         try:
             t = self.db.query(self.db.Publications.c.bibcode). \
@@ -112,14 +112,11 @@ class SEDSIMPLE(SED):
                 table()
             bibcode = t['bibcode'][0]
         except Exception as e:
-            self.message(f'Error trying to fetch references: {e}')
+            self.message(f'Error trying to fetch references: {e}', pre='[SIMPLE]')
             bibcode = None
-        return bibcode
 
-    def message(self, msg, pre='[SIMPLE]'):
-        # Overwrite message to use a custom prefix
-        if self.verbose:
-            if pre is None:
-                print(msg)
-            else:
-                print("{} {}".format(pre, msg))
+        # Fix for missing bibcode (sedkit can't handle None)
+        if bibcode is None:
+            bibcode = ''
+
+        return bibcode

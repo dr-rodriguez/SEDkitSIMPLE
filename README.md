@@ -23,7 +23,7 @@ For convenience, you may want to have utils.py in your current working directory
 Initiating with `SEDSIMPLE` is as simple as:
 
 ```python
-from utils import SEDSIMPLE
+from sedsimple import SEDSIMPLE
 from astrodbkit2.astrodb import Database
 
 db = Database('sqlite:///SIMPLE.db')
