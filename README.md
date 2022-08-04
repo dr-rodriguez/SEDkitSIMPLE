@@ -43,8 +43,8 @@ If you choose `auto_db=False` (the default), you can load whichever data you nee
  - sed.load_spectral_type_db()
  - sed.load_spectra_db()
 
-You can use the `SEDSIMPLE.fetch_single_spectrum_db()` to fetch the wavelength, flux, flux uncertainty, 
-and reference of a single spectrum if you need to do further transformations. 
+You can use `sed.fetch_single_spectrum_db()` to fetch the wavelength, flux, flux uncertainty, 
+and reference for a single spectrum if you need to do further transformations. 
 The input is a Spectra row from `db.inventory`; 
 see https://astrodbkit2.readthedocs.io/en/latest/ for more information on using AstrodbKit2 queries.
 
@@ -59,7 +59,7 @@ db.inventory('2MASS J23062928-0502285')  # primary source name in the database f
 ```
 
 All methods available in `SED` are available in `SEDSIMPLE` which means you can proceed as normal 
-(eg, `sed.plot()`, `sed.results`).
+(eg, `sed.add_spectrum()`, `sed.plot()`, `sed.results`).
 
 # TODO:
  - Write example notebook
