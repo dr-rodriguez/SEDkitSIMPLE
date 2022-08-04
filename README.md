@@ -48,8 +48,10 @@ db.search_object('Trappist-1')
 db.inventory('2MASS J23062928-0502285')  # primary source name in the database for Trappist-1
 ```
 
+You can also use the `SEDSIMPLE.fetch_single_spectrum_db()` to fetch the wavelength, flux, flux uncertainty, 
+and reference of a single spectrum if you need to do further transformations. The input is the Spectra row from `db.inventory`.
+
 All methods available in `SED` are available in `SEDSIMPLE` which means you can proceed as normal.
 
 # TODO:
- - Finish writing load_spectra_db
  - Write example notebook

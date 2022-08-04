@@ -5,6 +5,7 @@
 import astropy.units as u
 from astropy.units.quantity import Quantity
 from astropy.coordinates import Angle, SkyCoord
+from sqlalchemy import and_
 from sedkit import SED
 
 
@@ -26,6 +27,7 @@ class SEDSIMPLE(SED):
                 name = db_name
 
         # Database inventory
+        self.db_source = name
         self.inventory = db.inventory(name, pretty_print=False)
 
         if auto_db:
@@ -90,10 +92,47 @@ class SEDSIMPLE(SED):
         else:
             self.message(f"No spectral type for {self.name} in database.", pre='[SIMPLE]')
 
-    def load_spectra_db(self):
-        pass
+    def load_spectra_db(self, column='spectrum'):
+        # Fetch spectra from database
+        table = 'Spectra'
+        if table in self.inventory:
+            for row in self.inventory[table]:
+                try:
+                    wave, flux, flux_unc, bibcode = self.fetch_single_spectrum_db(row, column=column)
+                    if wave is not None:
+                        self.add_spectrum((wave, flux, flux_unc), ref=bibcode)
+                except Exception as e:
+                    self.message(f"Unable to load spectrum for {self.name} \n{row}\nError: {e}", pre='[SIMPLE]')
+        else:
+            self.message(f"No spectra for {self.name} in database.", pre='[SIMPLE]')
 
-    def _fix_bands(self, band):
+    def fetch_single_spectrum_db(self, spec_input, column='spectrum', **kwargs):
+        # Load a single spectrum from the database
+
+        # Attempt to get a Spectrum1D object
+        try:
+            spec_table = self.db.query(self.db.Spectra).\
+                filter(and_(self.db.Spectra.c.source == self.db_source,
+                            self.db.Spectra.c.regime == spec_input['regime'],
+                            self.db.Spectra.c.reference == spec_input['reference'],
+                            self.db.Spectra.c.observation_date == spec_input['observation_date'])).\
+                astropy(spectra=column)
+
+            # Extract relevant information
+            bibcode = self._fetch_db_bibcode(spec_input['reference'])
+            s = spec_table[column][0]
+            wave = s.wavelength
+            flux = s.flux
+            # by default Spectrum1D uncertainties are of type StdDevUncertainty but we want them as QTable
+            flux_unc = s.uncertainty.quantity
+        except Exception as e:
+            self.message(f"Unable to parse spectrum from database \n{spec_input}\nError: {e}", pre='[SIMPLE]')
+            wave, flux, flux_unc, bibcode = None, None, None, None
+
+        return wave, flux, flux_unc, bibcode
+
+    @staticmethod
+    def _fix_bands(band):
         # Manual fixes to some SIMPLE bands
         FIX_DICT = {'GAIA2': 'Gaia',
                     'GAIA3': 'Gaia',
