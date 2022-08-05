@@ -61,5 +61,4 @@ db.inventory('2MASS J23062928-0502285')  # primary source name in the database f
 All methods available in `SED` are available in `SEDSIMPLE` which means you can proceed as normal 
 (eg, `sed.add_spectrum()`, `sed.plot()`, `sed.results`).
 
-# TODO:
- - Write example notebook
+A tutorial notebook is available that walks you through the Trappist-1 example.

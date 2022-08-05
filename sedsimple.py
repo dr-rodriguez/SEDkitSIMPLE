@@ -11,6 +11,19 @@ from sedkit import SED
 
 class SEDSIMPLE(SED):
     def __init__(self, db, name, auto_db=False, **kwargs):
+        """
+        SIMPLE-SED Wrapper.
+
+        Parameters
+        ----------
+        db : astrodbkit2.Database
+            Database connection object
+        name : str
+            Name of source to consider
+        auto_db : bool
+            Flag to indicate whether to automatically load information from the database (default: False)
+        """
+
         # ProcessClass initialization
         super().__init__(name, **kwargs)
 
@@ -28,9 +41,11 @@ class SEDSIMPLE(SED):
 
         # Database inventory
         self.db_source = name
+        self.message(f'Target name {self.name} resolved to {self.db_source} in database.', pre='[SIMPLE]')
         self.inventory = db.inventory(name, pretty_print=False)
 
         if auto_db:
+            self.message('Autoloading information from database', pre='[SIMPLE]')
             self.load_coords_db()
             self.load_parallax_db()
             self.load_photometry_db()
