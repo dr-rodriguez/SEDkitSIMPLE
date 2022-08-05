@@ -46,7 +46,8 @@ If you choose `auto_db=False` (the default), you can load whichever data you nee
 You can use `sed.fetch_single_spectrum_db()` to fetch the wavelength, flux, flux uncertainty, 
 and reference for a single spectrum if you need to do further transformations. 
 The input is a Spectra row from `db.inventory`; 
-see https://astrodbkit2.readthedocs.io/en/latest/ for more information on using AstrodbKit2 queries.
+see https://astrodbkit2.readthedocs.io/en/latest/ for more information on using AstrodbKit2 queries 
+and the [SIMPLE Documentation](https://github.com/SIMPLE-AstroDB/SIMPLE-db/tree/main/documentation) for more info on the database structure.
 
 Note: upon initialization `SEDSIMPLE` will search for the specified target in the database. 
 The internal database name may be different from what provided name, 
