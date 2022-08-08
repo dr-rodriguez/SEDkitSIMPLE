@@ -70,6 +70,8 @@ class SEDSIMPLE(SED):
         table = 'Parallaxes'
         if table in self.inventory:
             # Fetch the adopted parallax
+            self.message(f'{len(self.inventory[table])} parallaxes found. Attempting to load adopted one...',
+                         pre='[SIMPLE]')
             for row in self.inventory[table]:
                 if row['adopted']:
                     value = Quantity(row['parallax'], unit=u.mas)
@@ -88,6 +90,7 @@ class SEDSIMPLE(SED):
         table = 'Photometry'
         if table in self.inventory:
             # Fetch the adopted parallax
+            self.message(f'{len(self.inventory[table])} photometry values found. Attempting to load...', pre='[SIMPLE]')
             for row in self.inventory[table]:
                 bibcode = self._fetch_db_bibcode(row['reference'])
                 band = self._fix_bands(row['band'])
@@ -100,6 +103,8 @@ class SEDSIMPLE(SED):
         table = 'SpectralTypes'
         if table in self.inventory:
             # Fetch the adopted spectral type
+            self.message(f'{len(self.inventory[table])} spectral types found. Attempting to load adopted one...',
+                         pre='[SIMPLE]')
             for row in self.inventory[table]:
                 if row['adopted']:
                     bibcode = self._fetch_db_bibcode(row['reference'])
@@ -107,13 +112,14 @@ class SEDSIMPLE(SED):
         else:
             self.message(f"No spectral type for {self.name} in database.", pre='[SIMPLE]')
 
-    def load_spectra_db(self, column='spectrum'):
+    def load_spectra_db(self, column='spectrum', **kwargs):
         # Fetch spectra from database
         table = 'Spectra'
         if table in self.inventory:
+            self.message(f'{len(self.inventory[table])} spectra found. Attempting to load...', pre='[SIMPLE]')
             for row in self.inventory[table]:
                 try:
-                    wave, flux, flux_unc, bibcode = self.fetch_single_spectrum_db(row, column=column)
+                    wave, flux, flux_unc, bibcode = self.fetch_single_spectrum_db(row, column=column, **kwargs)
                     if wave is not None:
                         self.add_spectrum((wave, flux, flux_unc), ref=bibcode)
                 except Exception as e:
@@ -121,7 +127,7 @@ class SEDSIMPLE(SED):
         else:
             self.message(f"No spectra for {self.name} in database.", pre='[SIMPLE]')
 
-    def fetch_single_spectrum_db(self, spec_input, column='spectrum', **kwargs):
+    def fetch_single_spectrum_db(self, spec_input, column='spectrum', spectra_format=None, error_scale=0.1, **kwargs):
         # Load a single spectrum from the database
 
         # Attempt to get a Spectrum1D object
@@ -131,20 +137,35 @@ class SEDSIMPLE(SED):
                             self.db.Spectra.c.regime == spec_input['regime'],
                             self.db.Spectra.c.reference == spec_input['reference'],
                             self.db.Spectra.c.observation_date == spec_input['observation_date'])).\
-                astropy(spectra=column)
+                astropy(spectra=column, spectra_format=spectra_format, **kwargs)
 
             # Extract relevant information
             bibcode = self._fetch_db_bibcode(spec_input['reference'])
             s = spec_table[column][0]
             wave = s.wavelength
-            flux = s.flux
+            flux = self._fix_fluxes(s.flux)
             # by default Spectrum1D uncertainties are of type StdDevUncertainty but we want them as QTable
-            flux_unc = s.uncertainty.quantity
+            if s.uncertainty is not None:
+                flux_unc = self._fix_fluxes(s.uncertainty.quantity)
+            else:
+                self.message(f'ERROR! No uncertainties present, adopting a scaling of {error_scale} for them.',
+                             pre='[SIMPLE]')
+                flux_unc = flux * error_scale
         except Exception as e:
             self.message(f"Unable to parse spectrum from database \n{spec_input}\nError: {e}", pre='[SIMPLE]')
             wave, flux, flux_unc, bibcode = None, None, None, None
 
         return wave, flux, flux_unc, bibcode
+
+    @staticmethod
+    def _fix_fluxes(val):
+        # Manual fix to address some flux issues
+
+        # Ampere used instead of Angstroms
+        if u.A in val.unit.bases:
+            val = val * u.A / u.AA
+
+        return val
 
     @staticmethod
     def _fix_bands(band):
