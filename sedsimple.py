@@ -2,6 +2,7 @@
 # David R Rodriguez
 # 2022-08   Initial implementation
 
+import numpy as np
 import astropy.units as u
 from astropy.units.quantity import Quantity
 from astropy.coordinates import Angle, SkyCoord
@@ -127,7 +128,7 @@ class SEDSIMPLE(SED):
         else:
             self.message(f"No spectra for {self.name} in database.", pre='[SIMPLE]')
 
-    def fetch_single_spectrum_db(self, spec_input, column='spectrum', spectra_format=None, error_scale=0.1, **kwargs):
+    def fetch_single_spectrum_db(self, spec_input, column='spectrum', spectra_format=None, error_scale=np.nan, **kwargs):
         # Load a single spectrum from the database
 
         # Attempt to get a Spectrum1D object
