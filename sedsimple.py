@@ -2,12 +2,66 @@
 # David R Rodriguez
 # 2022-08   Initial implementation
 
+import os
 import numpy as np
 import astropy.units as u
 from astropy.units.quantity import Quantity
 from astropy.coordinates import Angle, SkyCoord
 from sqlalchemy import and_
 from sedkit import SED
+from specutils.io.registers import data_loader
+from specutils import Spectrum1D
+from astropy.io import fits
+from astropy.nddata import StdDevUncertainty
+
+
+def _fix_fluxes(val):
+    # Manual fix to address some flux issues
+
+    # Ampere used instead of Angstroms
+    if u.A in val.unit.bases:
+        val = val * u.A / u.AA
+
+    return val
+
+
+def identify_rcspec(origin, *args, **kwargs):
+    # Identify the given file is a R-C Spec fits file
+    with fits.open(args[0], memmap=False) as hdulist:
+        check = (isinstance(args[0], str)
+                and os.path.splitext(args[0].lower())[1] == '.fits'
+                and ('KPNO' in hdulist[0].header.get('OBSERVAT', '').upper() or
+                     'CTIO' in hdulist[0].header.get('OBSERVAT', '').upper())
+                # and 'R-C Spec' in hdulist[0].header.get('INSTRUME', '').upper()  # not always present
+                and hdulist[0].header.get('NAXIS') == 3
+                and hdulist[0].header.get('NASIX3') == 4
+                and 'spectrum' in hdulist[0].header.get('BANDID1')
+                )
+
+    try:
+        s = Spectrum1D.read(args[0], format='wcs1d-fits')
+        check = (check and len(s.flux) == 4)
+    except:
+        check = False
+
+    return check
+
+
+@data_loader("RCSpec", identifier=identify_rcspec, extensions=['fits'], dtype=Spectrum1D)
+def load_rcspec(filename, **kwargs):
+    # Open a KPNO R-C Spec file and convert it to a Spectrum1D object
+
+    try:
+        s = Spectrum1D.read(filename, format='wcs1d-fits')
+        wave = s.wavelength
+        data = _fix_fluxes(s.flux[0][0])
+        uncertainty = StdDevUncertainty(_fix_fluxes(s.flux[3][0]))
+        spec = Spectrum1D(flux=data, spectral_axis=wave, uncertainty=uncertainty)
+    except Exception as e:
+        print(f'Error parsing R-C Spec file {filename}\nError: {e}')
+        spec = None
+
+    return spec
 
 
 class SEDSIMPLE(SED):
@@ -144,10 +198,10 @@ class SEDSIMPLE(SED):
             bibcode = self._fetch_db_bibcode(spec_input['reference'])
             s = spec_table[column][0]
             wave = s.wavelength
-            flux = self._fix_fluxes(s.flux)
+            flux = _fix_fluxes(s.flux)
             # by default Spectrum1D uncertainties are of type StdDevUncertainty but we want them as QTable
             if s.uncertainty is not None:
-                flux_unc = self._fix_fluxes(s.uncertainty.quantity)
+                flux_unc = _fix_fluxes(s.uncertainty.quantity)
             else:
                 self.message(f'ERROR! No uncertainties present, adopting a scaling of {error_scale} for them.',
                              pre='[SIMPLE]')
@@ -157,16 +211,6 @@ class SEDSIMPLE(SED):
             wave, flux, flux_unc, bibcode = None, None, None, None
 
         return wave, flux, flux_unc, bibcode
-
-    @staticmethod
-    def _fix_fluxes(val):
-        # Manual fix to address some flux issues
-
-        # Ampere used instead of Angstroms
-        if u.A in val.unit.bases:
-            val = val * u.A / u.AA
-
-        return val
 
     @staticmethod
     def _fix_bands(band):
