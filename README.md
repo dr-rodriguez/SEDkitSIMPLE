@@ -18,6 +18,11 @@ from astrodbkit2.astrodb import Database
 db = Database('sqlite:///SIMPLE.sqlite')
 ```
 
+This assumes the database file is in the same working directory, otherwise connect to it with something like:
+```python
+db = Database('sqlite:///path/to/SIMPLE.sqlite')
+```
+
 This `Database` object will need to be passed to `SEDSIMPLE` for it to work.
 
 The key functionality in this package is a new class (`SEDSIMPLE`) that inherits from `SED` in order 
