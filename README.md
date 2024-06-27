@@ -9,13 +9,13 @@ pip install AstrodbKit2
 
 You will also need to have a copy of the SIMPLE database. 
 You can download a SQLite binary version of SIMPLE from https://github.com/SIMPLE-AstroDB/SIMPLE-binary 
-or can pull the raw data and build it yourself from https://github.com/SIMPLE-AstroDB/SIMPLE-db
+or can pull the raw data and build it yourself from https://github.com/SIMPLE-AstroDB/SIMPLE-db (see more instructions in that repo)
 
 Once you have the database, you can place it in your current working directory and can connect to it with:
 
 ```python
 from astrodbkit2.astrodb import Database
-db = Database('sqlite:///SIMPLE.db')
+db = Database('sqlite:///SIMPLE.sqlite')
 ```
 
 This `Database` object will need to be passed to `SEDSIMPLE` for it to work.
@@ -30,7 +30,7 @@ Initiating with `SEDSIMPLE` is as simple as:
 from sedsimple import SEDSIMPLE
 from astrodbkit2.astrodb import Database
 
-db = Database('sqlite:///SIMPLE.db')
+db = Database('sqlite:///SIMPLE.sqlite')
 sed = SEDSIMPLE(db, 'Trappist-1', auto_db=True)
 ```
 
