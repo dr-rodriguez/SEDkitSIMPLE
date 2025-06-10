@@ -109,7 +109,7 @@ class SEDSIMPLE(SED):
             for row in self.inventory[table]:
                 if row['adopted']:
                     bibcode = self._fetch_db_bibcode(row['reference'])
-                    self.spectral_type = row['spectral_type_string'], bibcode
+                    self.spectral_type = row['spectral_type_code'], bibcode
         else:
             self.message(f"No spectral type for {self.name} in database.", pre='[SIMPLE]')
 
